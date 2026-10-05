@@ -1,3 +1,4 @@
+import calendar
 from datetime import date, timedelta
 
 from sqlalchemy.orm import Session
@@ -57,6 +58,14 @@ def search_contacts(db: Session, query: str):
     )
 
 
+def get_birthday_for_year(birthday: date, year: int) -> date:
+    if birthday.month == 2 and birthday.day == 29:
+        if not calendar.isleap(year):
+            return date(year, 2, 28)
+
+    return birthday.replace(year=year)
+
+
 def get_upcoming_birthdays(db: Session):
     today = date.today()
     end_date = today + timedelta(days=7)
@@ -66,7 +75,16 @@ def get_upcoming_birthdays(db: Session):
     upcoming = []
 
     for contact in contacts:
-        birthday = contact.birthday.replace(year=today.year)
+        birthday = get_birthday_for_year(
+            contact.birthday,
+            today.year,
+        )
+
+        if birthday < today:
+            birthday = get_birthday_for_year(
+                contact.birthday,
+                today.year + 1,
+            )
 
         if today <= birthday <= end_date:
             upcoming.append(contact)
